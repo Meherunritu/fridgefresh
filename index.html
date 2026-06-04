@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FridgeFresh — Zero-Waste Recipe Planner</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+
+<style>
+:root {
+  --forest:    #0d3b2e;
+  --forest2:   #1a5c46;
+  --forest3:   #2d8b63;
+  --mint:      #a8edca;
+  --cream:     #fdf8f0;
+  --cream2:    #f5ede0;
+  --amber:     #f59e0b;
+  --amber2:    #fbbf24;
+  --blush:     #e07a5f;
+  --blush2:    #f4a692;
+  --sage:      #6b9e82;
+  --sage2:     #9dc4ab;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--cream);
+  color: var(--forest);
+  min-height: 100dvh;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ── CUSTOM CURSOR ── */
+#cursor {
+  position: fixed; top:0; left:0; z-index:9999;
+  width:14px; height:14px;
+  background: var(--forest3);
+  border-radius:50%;
+  pointer-events:none;
+  transform: translate(-50%,-50%);
+  transition: transform .1s, width .3s, height .3s, background .3s;
+  mix-blend-mode: multiply;
+}
+#cursor-ring {
+  position: fixed; top:0; left:0; z-index:9998;
+  width:40px; height:40px;
+  border: 1.5px solid var(--forest3);
+  border-radius:50%;
+  pointer-events:none;
+  transform: translate(-50%,-50%);
+  transition: transform .12s ease, width .3s, height .3s, opacity .3s;
+  opacity: .5;
+}
+body:hover #cursor { opacity:1; }
+
+/* ── ANIMATED BACKGROUND ── */
+#bg-canvas {
+  position: fixed; inset:0; z-index:0;
+  pointer-events:none;
+}
+
+/* ── MESH GRADIENT ── */
+.mesh-bg {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(168,237,202,.18) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 80%, rgba(245,158,11,.10) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 60% 30%, rgba(45,139,99,.08) 0%, transparent 50%),
+    var(--cream);
+  animation: meshShift 12s ease-in-out infinite alternate;
+}
+@keyframes meshShift {
+  0%   { background-position: 0% 0%, 100% 100%, 60% 30%; }
+  50%  { background-position: 10% 20%, 90% 80%, 70% 20%; }
+  100% { background-position: 5% 10%, 95% 90%, 65% 35%; }
+}
+
+/* ── NAVBAR ── */
+#navbar {
+  position: sticky; top:0; z-index: 200;
+  background: rgba(253,248,240,.85);
+  backdrop-filter: blur(24px) saturate(1.8);
+  border-bottom: 1px solid rgba(107,158,130,.15);
+  box-shadow: 0 1px 30px rgba(13,59,46,.06);
+}
+
+.logo-text {
+  font-family: 'Playfair Display', serif;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--forest) 0%, var(--forest3) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+}
+
+/* ── NAV BUTTONS ── */
+.nav-btn {
+  position: relative;
+  font-weight: 500;
+  font-size: .8rem;
+  letter-spacing: .02em;
+  padding: .4rem .9rem;
+  border-radius: 99px;
+  transition: color .25s, background .25s, transform .2s;
+  color: var(--sage);
+}
+.nav-btn:hover {
+  color: var(--forest);
+  background: rgba(107,158,130,.12);
+  transform: translateY(-1px);
+}
+.nav-btn.active {
+  color: var(--cream);
+  background: var(--forest);
+  box-shadow: 0 4px 16px rgba(13,59,46,.35);
+}
+.nav-badge {
+  display:inline-flex; align-items:center; justify-content:center;
+  width:16px; height:16px; border-radius:50%;
+  background: var(--blush);
+  color:white; font-size:.6rem; font-weight:700;
+  margin-left:4px;
+  animation: pulseBadge 2s ease infinite;
+}
+@keyframes pulseBadge {
+  0%,100%{ transform:scale(1); }
+  50%{ transform:scale(1.2); }
+}
+
+/* ── VIEWS ── */
+.view { display:none; }
+.view.active { display:block; }
+
+/* ── HERO SECTION ── */
+.hero-tag {
+  display: inline-flex; align-items:center; gap:.4rem;
+  background: linear-gradient(135deg, var(--mint), rgba(168,237,202,.3));
+  border: 1px solid rgba(45,139,99,.2);
+  color: var(--forest2);
+  font-size:.7rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+  padding:.35rem .9rem; border-radius:99px;
+  animation: tagFloat 3s ease-in-out infinite;
+}
+@keyframes tagFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
+
+.hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.8rem, 8vw, 4.5rem);
+  line-height: .95;
+  letter-spacing: -2px;
+  color: var(--forest);
+}
+.hero-title em {
+  font-style: italic;
+  background: linear-gradient(135deg, var(--forest3) 0%, var(--amber) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── STAT CARDS ── */
+.stat-card {
+  position: relative; overflow:hidden;
+  background: white;
+  border-radius: 20px;
+  padding: 1.1rem .9rem;
+  border: 1px solid rgba(107,158,130,.12);
+  text-align:center;
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .3s;
+  cursor: default;
+}
+.stat-card:hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 20px 50px rgba(13,59,46,.14);
+}
+.stat-card::before {
+  content:'';
+  position:absolute; inset:0;
+  background: linear-gradient(135deg, transparent 60%, rgba(255,255,255,.8) 100%);
+  border-radius: inherit;
+}
+.stat-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.2rem;
+  font-weight: 900;
+  line-height:1;
+}
+
+/* ── ADD FORM ── */
+.form-card {
+  background: white;
+  border-radius: 28px;
+  border: 1px solid rgba(107,158,130,.15);
+  padding: 1.6rem;
+  box-shadow: 0 4px 30px rgba(13,59,46,.06), 0 1px 0 rgba(255,255,255,.8) inset;
+  transition: box-shadow .3s;
+}
+.form-card:focus-within {
+  box-shadow: 0 8px 50px rgba(13,59,46,.12), 0 0 0 2px rgba(45,139,99,.15), 0 1px 0 rgba(255,255,255,.8) inset;
+}
+.form-input {
+  width:100%;
+  background: var(--cream);
+  border: 1.5px solid rgba(107,158,130,.2);
+  border-radius: 14px;
+  padding: .85rem 1.1rem;
+  font-family:'Outfit',sans-serif; font-size:.875rem;
+  color: var(--forest);
+  transition: border-color .25s, box-shadow .25s, transform .2s;
+}
+.form-input:focus {
+  outline:none;
+  border-color: var(--forest3);
+  box-shadow: 0 0 0 4px rgba(45,139,99,.12);
+  transform: scale(1.01);
+}
+.form-input::placeholder { color: var(--sage2); }
+.add-btn {
+  width:100%;
+  background: linear-gradient(135deg, var(--forest) 0%, var(--forest2) 50%, var(--forest3) 100%);
+  background-size: 200% 200%;
+  color: white;
+  font-family:'Outfit',sans-serif; font-weight:700; font-size:.875rem; letter-spacing:.03em;
+  border:none; border-radius:14px;
+  padding: 1rem;
+  cursor:none;
+  transition: background-position .4s, transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .3s;
+  box-shadow: 0 4px 20px rgba(13,59,46,.3);
+}
+.add-btn:hover {
+  background-position: 100% 100%;
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 12px 35px rgba(13,59,46,.4);
+}
+.add-btn:active { transform: scale(.97); }
+
+/* ── INVENTORY ITEMS ── */
+.item-row {
+  background: white;
+  border-radius: 18px;
+  padding: .9rem 1.1rem;
+  border: 1px solid rgba(107,158,130,.12);
+  display:flex; align-items:center; gap:.85rem;
+  transition: transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .35s, opacity .3s, border-color .25s;
+  position:relative; overflow:hidden;
+  cursor: default;
+}
+.item-row::before {
+  content:'';
+  position:absolute; left:0; top:0; bottom:0; width:3px;
+  border-radius:3px 0 0 3px;
+  background: var(--sage);
+  transition: width .3s, background .3s;
+}
+.item-row:hover {
+  transform: translateX(6px) translateY(-4px) scale(1.02);
+  box-shadow: 0 16px 45px rgba(13,59,46,.14);
+  border-color: rgba(45,139,99,.3);
+}
+.item-row:hover::before { width:5px; }
+.item-row.expiring-today::before { background: var(--blush); }
+.item-row.expiring-soon::before  { background: var(--amber); }
+.item-row.fresh::before          { background: var(--sage);  }
+
+.item-row.removing {
+  opacity:0; transform: translateX(60px) scale(.9);
+}
+
+.item-emoji {
+  width:42px; height:42px;
+  background: linear-gradient(135deg, var(--cream) 0%, var(--cream2) 100%);
+  border-radius:12px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.3rem; flex-shrink:0;
+  box-shadow: 0 2px 8px rgba(13,59,46,.07);
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.item-row:hover .item-emoji { transform: scale(1.18) rotate(-5deg); }
+
+.del-btn {
+  flex-shrink:0;
+  width:32px; height:32px;
+  background: rgba(224,122,95,.1);
+  border:1px solid rgba(224,122,95,.2);
+  color: var(--blush);
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:.7rem; font-weight:700;
+  cursor:none;
+  transition: background .25s, transform .25s cubic-bezier(.34,1.56,.64,1), color .25s;
+}
+.del-btn:hover {
+  background: var(--blush);
+  color: white;
+  transform: scale(1.2) rotate(90deg);
+  box-shadow: 0 4px 16px rgba(224,122,95,.4);
+}
+
+/* ── BADGE ── */
+.badge {
+  font-size:.65rem; font-weight:700; letter-spacing:.04em;
+  padding:.28rem .7rem; border-radius:99px; flex-shrink:0;
+  white-space:nowrap;
+}
+.badge-red   { background: rgba(224,122,95,.15); color: var(--blush); border:1px solid rgba(224,122,95,.3); animation: pulseBadge 1.8s infinite; }
+.badge-amber { background: rgba(245,158,11,.12); color: #d97706;       border:1px solid rgba(245,158,11,.3); }
+.badge-green { background: rgba(107,158,130,.12); color: var(--forest2); border:1px solid rgba(107,158,130,.25); }
+
+/* ── RECIPE CARDS ── */
+.recipe-card {
+  background: white;
+  border-radius: 28px;
+  overflow: hidden;
+  border: 1px solid rgba(107,158,130,.12);
+  box-shadow: 0 4px 24px rgba(13,59,46,.07);
+  cursor: none;
+  transition: transform .4s cubic-bezier(.34,1.56,.64,1), box-shadow .4s, border-color .3s;
+  position:relative;
+}
+.recipe-card:hover {
+  transform: translateY(-12px) rotate(.8deg) scale(1.02);
+  box-shadow: 0 30px 70px rgba(13,59,46,.2);
+  border-color: rgba(45,139,99,.3);
+}
+.recipe-card:hover .recipe-img { transform: scale(1.1); }
+.recipe-card:hover .recipe-play { opacity:1; transform: translate(-50%,-50%) scale(1); }
+
+.recipe-img {
+  width:100%; height:200px; object-fit:cover;
+  transition: transform .6s cubic-bezier(.25,.46,.45,.94);
+  display:block;
+}
+.recipe-play {
+  position:absolute; top:50%; left:50%; 
+  transform: translate(-50%,-50%) scale(.8);
+  opacity:0;
+  width:56px; height:56px;
+  background: rgba(255,255,255,.9);
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.4rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,.2);
+  transition: opacity .3s, transform .3s cubic-bezier(.34,1.56,.64,1);
+  top:100px; /* center of img */
+}
+
+.match-pill {
+  position:absolute; top:14px; right:14px;
+  font-size:.68rem; font-weight:800; letter-spacing:.05em;
+  padding:.3rem .8rem; border-radius:99px;
+  backdrop-filter: blur(8px);
+}
+
+.time-pill {
+  position:absolute; bottom:14px; left:14px;
+  background: rgba(13,59,46,.7);
+  backdrop-filter: blur(8px);
+  color:white; font-size:.68rem; font-weight:600;
+  padding:.3rem .75rem; border-radius:99px;
+}
+
+.expiring-tag {
+  display:inline-flex; align-items:center; gap:.3rem;
+  background: rgba(224,122,95,.1);
+  border:1px solid rgba(224,122,95,.2);
+  color: var(--blush);
+  font-size:.65rem; font-weight:600;
+  padding:.22rem .65rem; border-radius:99px;
+}
+
+/* ── FILTER BTNS ── */
+.filter-btn {
+  flex-shrink:0;
+  font-size:.75rem; font-weight:600; letter-spacing:.02em;
+  padding:.45rem 1.1rem; border-radius:99px;
+  cursor:none;
+  transition: all .25s cubic-bezier(.34,1.56,.64,1);
+  border: 1.5px solid rgba(107,158,130,.25);
+  background: white; color: var(--sage);
+}
+.filter-btn:hover { transform: translateY(-2px) scale(1.05); box-shadow:0 6px 20px rgba(13,59,46,.1); }
+.filter-btn.active { background: var(--forest); color:white; border-color:transparent; box-shadow:0 6px 20px rgba(13,59,46,.35); }
+
+/* ── COOKING MODE ── */
+.cook-wrap {
+  background: linear-gradient(160deg, #071f18 0%, #0d3b2e 40%, #0f4a38 70%, #183d2e 100%);
+  min-height: 100dvh;
+  margin: 0 -1rem;
+  padding: 1.5rem 1.5rem 6rem;
+  position:relative; overflow:hidden;
+}
+.cook-wrap::before {
+  content:'';
+  position:absolute; inset:0;
+  background:
+    radial-gradient(ellipse 50% 40% at 80% 10%, rgba(168,237,202,.07) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 35% at 10% 90%, rgba(245,158,11,.06) 0%, transparent 60%);
+  pointer-events:none;
+}
+.cook-orb {
+  position:absolute;
+  border-radius:50%;
+  filter: blur(60px);
+  pointer-events:none;
+  animation: orbDrift 8s ease-in-out infinite alternate;
+}
+@keyframes orbDrift {
+  0%   { transform: translate(0,0) scale(1); }
+  50%  { transform: translate(30px,-20px) scale(1.1); }
+  100% { transform: translate(-10px,15px) scale(.95); }
+}
+
+.step-card {
+  background: rgba(255,255,255,.06);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 28px;
+  padding: 2rem;
+  box-shadow: 0 8px 60px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.1);
+  transition: transform .4s cubic-bezier(.34,1.56,.64,1);
+}
+.step-card:hover { transform: scale(1.01); }
+
+.cook-progress-track {
+  background: rgba(255,255,255,.1);
+  border-radius:99px; height:6px;
+  overflow:hidden;
+}
+.cook-progress-fill {
+  height:100%;
+  background: linear-gradient(90deg, var(--sage2), var(--mint), var(--amber2));
+  background-size:200% 100%;
+  border-radius:99px;
+  transition: width .6s cubic-bezier(.4,0,.2,1);
+  animation: shimmer 2.5s linear infinite;
+}
+@keyframes shimmer { 0%{background-position:0%} 100%{background-position:200%} }
+
+.cook-btn {
+  flex:1;
+  font-family:'Outfit',sans-serif; font-weight:700;
+  border:none; border-radius:18px; padding:1.1rem;
+  cursor:none; font-size:.9rem;
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .3s, opacity .3s;
+}
+.cook-btn:not(:disabled):hover { transform: translateY(-4px) scale(1.03); }
+.cook-btn:active { transform: scale(.97); }
+.cook-btn-prev {
+  background: rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.12);
+  color: rgba(255,255,255,.7);
+}
+.cook-btn-prev:disabled { opacity:.25; cursor:not-allowed; }
+.cook-btn-next {
+  background: linear-gradient(135deg, var(--sage) 0%, var(--forest3) 100%);
+  color:white;
+  box-shadow: 0 6px 30px rgba(45,139,99,.5);
+}
+.cook-btn-done {
+  background: linear-gradient(135deg, var(--amber) 0%, var(--blush) 100%);
+  box-shadow: 0 6px 30px rgba(245,158,11,.5);
+}
+
+.step-dot {
+  width:8px; height:8px; border-radius:99px;
+  transition: all .3s cubic-bezier(.34,1.56,.64,1);
+  cursor:none;
+}
+.step-dot.done    { background: var(--sage2); }
+.step-dot.current { background: var(--amber2); width:24px; box-shadow:0 0 12px rgba(251,191,36,.6); }
+.step-dot.future  { background: rgba(255,255,255,.2); }
+
+/* ── SECTION LABEL ── */
+.section-label {
+  font-size:.65rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase;
+  color: var(--sage);
+  display:flex; align-items:center; gap:.5rem;
+}
+.section-label::before {
+  content:''; flex:1; height:1px; background: linear-gradient(90deg, transparent, rgba(107,158,130,.25));
+  max-width:30px;
+}
+.section-label::after {
+  content:''; flex:1; height:1px; background: linear-gradient(90deg, rgba(107,158,130,.25), transparent);
+}
+
+/* ── STAGGER ENTRY ── */
+@keyframes entryUp {
+  from { opacity:0; transform:translateY(22px) scale(.97); }
+  to   { opacity:1; transform:none; }
+}
+.stagger-item {
+  animation: entryUp .5s cubic-bezier(.25,.46,.45,.94) both;
+}
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  text-align:center; padding: 3rem 1rem;
+  display:flex; flex-direction:column; align-items:center; gap:1rem;
+}
+.empty-icon {
+  width:80px; height:80px;
+  background: linear-gradient(135deg, rgba(168,237,202,.3), rgba(107,158,130,.15));
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:2rem;
+  animation: tagFloat 3s ease-in-out infinite;
+}
+
+/* ── DIVIDER ── */
+.fancy-divider {
+  height:1px;
+  background: linear-gradient(90deg, transparent, rgba(107,158,130,.25) 30%, rgba(107,158,130,.25) 70%, transparent);
+  margin: 1.5rem 0;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background: var(--sage2); border-radius:99px; }
+
+/* ── TILT EFFECT (recipe cards) ── */
+.tilt-card { transform-style: preserve-3d; perspective: 800px; }
+
+/* ── CONFETTI PARTICLE ── */
+.confetti-piece {
+  position:fixed; pointer-events:none; z-index:9999;
+  border-radius:2px;
+  animation: confettiFall 1.2s ease forwards;
+}
+@keyframes confettiFall {
+  0%   { opacity:1; transform: translateY(0) rotate(0deg) scale(1); }
+  100% { opacity:0; transform: translateY(300px) rotate(720deg) scale(.3); }
+}
+
+/* ── FLOATING PARTICLES (bg) ── */
+.particle {
+  position:fixed; border-radius:50%; pointer-events:none; z-index:1;
+  animation: particleDrift linear infinite;
+  opacity:.25;
+}
+@keyframes particleDrift {
+  0%  { transform:translateY(100vh) rotate(0deg); opacity:0; }
+  10% { opacity:.25; }
+  90% { opacity:.25; }
+  100%{ transform:translateY(-10vh) rotate(360deg); opacity:0; }
+}
+
+/* select arrow */
+select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b9e82' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:36px !important; }
+
+/* section header with pill count */
+.section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:.75rem; }
+.count-pill { font-size:.7rem; font-weight:700; background:linear-gradient(135deg,var(--forest),var(--forest3)); color:white; padding:.2rem .75rem; border-radius:99px; }
+</style>
+</head>
+
+<body class="mesh-bg">
+
+<!-- Custom cursor -->
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- Floating bg particles (injected by JS) -->
+<div id="particles-wrap" aria-hidden="true"></div>
+
+<!-- ═══════════════ NAVBAR ═══════════════ -->
+<header id="navbar">
+  <div style="max-width:680px;margin:0 auto;padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:.5rem;">
+      <div style="width:34px;height:34px;background:linear-gradient(135deg,var(--forest),var(--forest3));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 4px 16px rgba(13,59,46,.35);">🥬</div>
+      <span class="logo-text" style="font-size:1.3rem;">FridgeFresh</span>
+    </div>
+    <nav style="display:flex;gap:.3rem;align-items:center;">
+      <button class="nav-btn active" id="nav-inventory" onclick="showView('inventory')">🗂 Inventory<span id="expiring-badge" class="nav-badge" style="display:none">0</span></button>
+      <button class="nav-btn" id="nav-recipes" onclick="showView('recipes')">🍳 Recipes</button>
+      <button class="nav-btn" id="nav-cooking" onclick="showView('cooking')">👨‍🍳 Cook</button>
+    </nav>
+  </div>
+</header>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<main style="max-width:680px;margin:0 auto;padding:1.5rem 1rem 6rem;position:relative;z-index:10;">
+
+  <!-- ───── VIEW 1: INVENTORY ───── -->
+  <div id="view-inventory" class="view active">
+
+    <!-- Hero -->
+    <div style="margin-bottom:1.75rem;" class="stagger-item">
+      <div style="margin-bottom:.9rem;">
+        <span class="hero-tag">✦ Kitchen Intelligence</span>
+      </div>
+      <h1 class="hero-title">What's in<br/><em>the fridge?</em></h1>
+      <p style="color:var(--sage);font-size:.875rem;margin-top:.6rem;font-weight:300;letter-spacing:.01em;">Track freshness · Cut waste · Cook smarter</p>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1.75rem;" class="stagger-item" style="animation-delay:.1s">
+      <div class="stat-card">
+        <div class="stat-num" id="stat-total" style="color:var(--forest);">0</div>
+        <p style="font-size:.7rem;color:var(--sage);margin-top:.2rem;font-weight:500;letter-spacing:.04em;text-transform:uppercase;">Items</p>
+        <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--forest),var(--forest3));border-radius:0 0 20px 20px;"></div>
+      </div>
+      <div class="stat-card" style="background:linear-gradient(135deg,#fff9f8,white);">
+        <div class="stat-num" id="stat-expiring" style="color:var(--blush);">0</div>
+        <p style="font-size:.7rem;color:var(--sage);margin-top:.2rem;font-weight:500;letter-spacing:.04em;text-transform:uppercase;">Expiring</p>
+        <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--blush2),var(--blush));border-radius:0 0 20px 20px;"></div>
+      </div>
+      <div class="stat-card" style="background:linear-gradient(135deg,#f5fdf8,white);">
+        <div class="stat-num" id="stat-fresh" style="color:var(--forest3);">0</div>
+        <p style="font-size:.7rem;color:var(--sage);margin-top:.2rem;font-weight:500;letter-spacing:.04em;text-transform:uppercase;">Fresh</p>
+        <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--sage2),var(--mint));border-radius:0 0 20px 20px;"></div>
+      </div>
+    </div>
+
+    <!-- Add Form -->
+    <div class="form-card stagger-item" style="margin-bottom:1.75rem;animation-delay:.15s;">
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1.1rem;">
+        <div style="width:28px;height:28px;background:linear-gradient(135deg,var(--forest),var(--forest3));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.85rem;">+</div>
+        <span style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--forest);">Add Ingredient</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.75rem;">
+        <input id="item-name" type="text" placeholder="e.g. Cherry Tomatoes…" class="form-input" onkeydown="if(event.key==='Enter')addItem()"/>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+          <select id="item-category" class="form-input" style="font-family:'Outfit',sans-serif;">
+            <option>🥦 Vegetable</option>
+            <option>🍎 Fruit</option>
+            <option>🥛 Dairy</option>
+            <option>🥩 Meat</option>
+            <option>🌾 Grain</option>
+            <option>🫙 Pantry</option>
+          </select>
+          <select id="item-expiry" class="form-input" style="font-family:'Outfit',sans-serif;">
+            <option value="0">Expires Today</option>
+            <option value="2">2 Days Left</option>
+            <option value="5">5 Days Left</option>
+            <option value="10" selected>10 Days Left</option>
+            <option value="30">30+ Days</option>
+          </select>
+        </div>
+        <button class="add-btn" onclick="addItem()">Add to Fridge →</button>
+      </div>
+    </div>
+
+    <!-- List header -->
+    <div class="section-header stagger-item" style="animation-delay:.2s;">
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--forest);">Current Inventory</div>
+      <div class="count-pill" id="item-count">0 items</div>
+    </div>
+
+    <div class="fancy-divider"></div>
+
+    <div id="inventory-list" style="display:flex;flex-direction:column;gap:.6rem;"></div>
+    <div id="empty-msg" class="empty-state" style="display:none;">
+      <div class="empty-icon">🥕</div>
+      <p style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--forest);">Your fridge is empty</p>
+      <p style="font-size:.8rem;color:var(--sage);">Add some ingredients above to get started!</p>
+    </div>
+  </div>
+
+  <!-- ───── VIEW 2: RECIPES ───── -->
+  <div id="view-recipes" class="view">
+
+    <div style="margin-bottom:1.75rem;" class="stagger-item">
+      <span class="hero-tag">✦ Smart Matching</span>
+      <h1 class="hero-title" style="margin-top:.7rem;">Recipe<br/><em>Suggestions</em></h1>
+      <p style="color:var(--sage);font-size:.875rem;margin-top:.6rem;font-weight:300;">Ranked by what expires soonest</p>
+    </div>
+
+    <!-- Filters -->
+    <div style="display:flex;gap:.6rem;overflow-x:auto;padding-bottom:.5rem;margin-bottom:1.5rem;" class="stagger-item" style="animation-delay:.1s;">
+      <button class="filter-btn active" id="filter-all" onclick="filterRecipes('all')">All Recipes</button>
+      <button class="filter-btn" id="filter-quick" onclick="filterRecipes('quick')">⚡ Under 20 min</button>
+      <button class="filter-btn" id="filter-highmatch" onclick="filterRecipes('highmatch')">🎯 Best Match</button>
+    </div>
+
+    <div id="recipe-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.1rem;"></div>
+  </div>
+
+  <!-- ───── VIEW 3: COOKING ───── -->
+  <div id="view-cooking" class="view">
+    <div id="cooking-placeholder" class="empty-state" style="padding-top:4rem;">
+      <div class="empty-icon" style="width:90px;height:90px;font-size:2.5rem;">🍳</div>
+      <p style="font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--forest);font-weight:700;">Ready to Cook?</p>
+      <p style="font-size:.85rem;color:var(--sage);text-align:center;">Pick a recipe from the Recipes tab<br/>to enter Cooking Mode.</p>
+      <button onclick="showView('recipes')" class="add-btn" style="max-width:220px;margin-top:.5rem;">Browse Recipes →</button>
+    </div>
+    <div id="cooking-ui" style="display:none;margin:0 -1rem;"></div>
+  </div>
+
+</main>
+
+<!-- ═══════════════ SCRIPT ═══════════════ -->
+<script>
+// ══ DATA ══════════════════════════════════════════════
+let inventory = [
+  {id:1,name:'Spinach',        cat:'🥦 Vegetable', days:0},
+  {id:2,name:'Cherry Tomatoes',cat:'🥦 Vegetable', days:2},
+  {id:3,name:'Greek Yogurt',   cat:'🥛 Dairy',     days:2},
+  {id:4,name:'Eggs',           cat:'🥛 Dairy',     days:5},
+  {id:5,name:'Avocado',        cat:'🍎 Fruit',     days:1},
+  {id:6,name:'Feta Cheese',    cat:'🥛 Dairy',     days:7},
+  {id:7,name:'Sourdough Bread',cat:'🌾 Grain',     days:3},
+  {id:8,name:'Lemon',          cat:'🍎 Fruit',     days:14},
+];
+
+const RECIPES = [
+  {
+    id:1, name:'Spinach & Tomato Frittata',
+    img:'https://images.unsplash.com/photo-1510693206972-df098062cb71?w=600&q=80',
+    time:18, match:92,
+    expiring:['Spinach','Cherry Tomatoes','Eggs'],
+    desc:'A light, protein-packed Italian egg bake. Uses your most urgent greens.',
+    steps:[
+      {t:'Prep Vegetables',b:'Wash and roughly chop the spinach. Halve the cherry tomatoes. Set both aside in separate bowls.'},
+      {t:'Preheat Oven',b:'Preheat your oven to 200°C (390°F). Position the rack in the centre. This should take about 10 minutes.'},
+      {t:'Sauté the Spinach',b:'Heat 1 tbsp olive oil in an oven-safe skillet over medium heat. Add spinach and toss until just wilted, about 90 seconds. Season with salt and pepper.'},
+      {t:'Add the Tomatoes',b:'Scatter the cherry tomatoes across the pan. Stir gently for 1 minute until they soften slightly and begin to release their juices.'},
+      {t:'Pour the Eggs',b:'Whisk 4 large eggs with a pinch of salt and a crack of pepper. Pour evenly over the vegetables. Do not stir — let it settle.'},
+      {t:'Bake Until Golden',b:'Transfer the skillet straight into the hot oven. Bake for 10–12 minutes until the eggs are fully set and the edges turn golden.'},
+      {t:'Rest & Serve 🎉',b:'Remove from oven and rest for 2 minutes. Slice into wedges, finish with a squeeze of lemon and fresh herbs. Buon appetito!'},
+    ]
+  },
+  {
+    id:2, name:'Avocado Toast with Feta',
+    img:'https://images.unsplash.com/photo-1541519227354-08fa5d50c820?w=600&q=80',
+    time:8, match:87,
+    expiring:['Avocado','Sourdough Bread','Feta Cheese'],
+    desc:'Creamy mashed avocado on toasted sourdough with crumbled feta and chilli.',
+    steps:[
+      {t:'Toast the Bread',b:'Place 2 thick slices of sourdough in the toaster. Toast to a deep golden — about 3–4 minutes. You want a satisfying crunch.'},
+      {t:'Mash the Avocado',b:'Halve the avocado, scoop the flesh into a bowl. Mash with a fork — leave it slightly chunky for texture. Season with sea salt and black pepper.'},
+      {t:'Brighten with Lemon',b:'Add a generous squeeze of fresh lemon juice to the avocado. Mix well. This keeps it vibrant green and adds a zesty kick.'},
+      {t:'Spread & Top',b:'Spread the mashed avocado over the warm toast. Crumble feta generously over the top, then add red chilli flakes.'},
+      {t:'Finish & Eat 🥑',b:'Drizzle with your best olive oil. Crack extra black pepper on top. Eat immediately while the toast is still warm and crispy!'},
+    ]
+  },
+  {
+    id:3, name:'Greek Yogurt Tzatziki Bowl',
+    img:'https://images.unsplash.com/photo-1567608285969-48e4bbe0d399?w=600&q=80',
+    time:10, match:79,
+    expiring:['Greek Yogurt','Cherry Tomatoes'],
+    desc:'Fresh and creamy yogurt bowl with roasted veg and herby dressing.',
+    steps:[
+      {t:'Base the Bowl',b:'Spoon 1 cup of thick Greek yogurt into a wide bowl. Drizzle with olive oil. Season with salt, pepper, and a tiny pinch of garlic powder.'},
+      {t:'Prep the Cucumber',b:'Grate half a cucumber. Place in a clean cloth and squeeze firmly to remove all water — this prevents the tzatziki going watery.'},
+      {t:'Fold Together',b:'Fold the squeezed cucumber into the yogurt along with 1 tsp fresh or dried dill. Taste and adjust seasoning.'},
+      {t:'Add Fresh Tomatoes',b:'Quarter your cherry tomatoes and arrange them over the yogurt. Their acidity balances the richness beautifully.'},
+      {t:'Garnish & Serve 🫙',b:'Dust with smoked paprika. Drizzle more olive oil. Serve with warm pitta or flatbread on the side. Refreshing!'},
+    ]
+  },
+  {
+    id:4, name:'Silky Lemon Egg Drop Soup',
+    img:'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600&q=80',
+    time:15, match:74,
+    expiring:['Eggs','Lemon','Spinach'],
+    desc:'A restorative broth with silky egg ribbons, spinach and bright lemon.',
+    steps:[
+      {t:'Simmer the Broth',b:'Pour 4 cups of good vegetable or chicken stock into a medium saucepan. Bring to a steady simmer over medium heat. Season well with salt.'},
+      {t:'Wilt the Spinach',b:'Add a large handful of spinach to the simmering broth. Stir until it wilts completely — takes about 60 seconds.'},
+      {t:'Beat the Eggs',b:'Crack 2 eggs into a jug. Add a squeeze of lemon and a pinch of salt. Whisk vigorously until fully combined.'},
+      {t:'Create Silky Ribbons',b:'With the broth at a gentle simmer (not boiling), drizzle the egg mixture in slowly while stirring in circles with a chopstick. Watch the magic happen.'},
+      {t:'Finish & Ladle 🍋',b:'Squeeze in remaining lemon juice. Taste and adjust salt. Ladle into warm bowls, top with lemon zest and a crack of white pepper. Serve immediately.'},
+    ]
+  },
+];
+
+let activeRecipe = null;
+let cookStep = 0;
+let currentFilter = 'all';
+let nextId = 50;
+
+// ══ CURSOR ════════════════════════════════════════════
+const cursorEl   = document.getElementById('cursor');
+const cursorRing = document.getElementById('cursor-ring');
+let mx=0, my=0, rx=0, ry=0;
+document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; cursorEl.style.left=mx+'px'; cursorEl.style.top=my+'px'; });
+(function animRing(){
+  rx += (mx-rx)*.1; ry += (my-ry)*.1;
+  cursorRing.style.left=rx+'px'; cursorRing.style.top=ry+'px';
+  requestAnimationFrame(animRing);
+})();
+document.querySelectorAll('button,a,input,select').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{ cursorEl.style.width='22px'; cursorEl.style.height='22px'; cursorEl.style.background='var(--blush)'; });
+  el.addEventListener('mouseleave',()=>{ cursorEl.style.width='14px'; cursorEl.style.height='14px'; cursorEl.style.background='var(--forest3)'; });
+});
+
+// ══ FLOATING PARTICLES ═══════════════════════════════
+(function spawnParticles(){
+  const wrap = document.getElementById('particles-wrap');
+  const colors = ['var(--mint)','var(--sage2)','var(--amber2)','var(--blush2)'];
+  for(let i=0;i<18;i++){
+    const d = document.createElement('div');
+    d.className='particle';
+    const size = Math.random()*8+4;
+    d.style.cssText=`
+      width:${size}px; height:${size}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      left:${Math.random()*100}vw;
+      animation-duration:${Math.random()*15+12}s;
+      animation-delay:${Math.random()*15}s;
+      border-radius:${Math.random()>.5?'50%':'4px'};
+    `;
+    wrap.appendChild(d);
+  }
+})();
+
+// ══ BADGE HELPER ══════════════════════════════════════
+function badge(days){
+  if(days<=0)  return {cls:'badge badge-red',   label:'🔴 Expires Today', rowCls:'expiring-today'};
+  if(days<=2)  return {cls:'badge badge-amber', label:'🟠 '+days+' Days Left', rowCls:'expiring-soon'};
+  if(days<=5)  return {cls:'badge badge-amber', label:'🟡 '+days+' Days', rowCls:'expiring-soon'};
+  return             {cls:'badge badge-green',  label:'🟢 '+days+' Days Fresh', rowCls:'fresh'};
+}
+
+// ══ RENDER INVENTORY ══════════════════════════════════
+function renderInventory(){
+  const list    = document.getElementById('inventory-list');
+  const empty   = document.getElementById('empty-msg');
+  const count   = document.getElementById('item-count');
+  const expBadge= document.getElementById('expiring-badge');
+  const expiring= inventory.filter(i=>i.days<=2).length;
+  const fresh   = inventory.filter(i=>i.days>5).length;
+
+  document.getElementById('stat-total').textContent    = inventory.length;
+  document.getElementById('stat-expiring').textContent = expiring;
+  document.getElementById('stat-fresh').textContent    = fresh;
+  count.textContent = inventory.length+' item'+(inventory.length!==1?'s':'');
+  if(expiring>0){ expBadge.textContent=expiring; expBadge.style.display='inline-flex'; }
+  else expBadge.style.display='none';
+
+  if(!inventory.length){ list.innerHTML=''; empty.style.display='flex'; return; }
+  empty.style.display='none';
+
+  const sorted=[...inventory].sort((a,b)=>a.days-b.days);
+  list.innerHTML = sorted.map((item,i)=>{
+    const b = badge(item.days);
+    const emoji = item.cat.split(' ')[0];
+    return `
+    <div id="item-${item.id}" class="item-row ${b.rowCls} stagger-item" style="animation-delay:${i*.06}s;">
+      <div class="item-emoji">${emoji}</div>
+      <div style="flex:1;min-width:0;">
+        <p style="font-weight:600;font-size:.875rem;color:var(--forest);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</p>
+        <p style="font-size:.72rem;color:var(--sage);margin-top:.15rem;">${item.cat.replace(/^\S+\s/,'')}</p>
+      </div>
+      <span class="${b.cls}">${b.label}</span>
+      <button class="del-btn" onclick="deleteItem(${item.id})" title="Remove">✕</button>
+    </div>`;
+  }).join('');
+
+  // Re-apply cursor listeners to new elements
+  document.querySelectorAll('.del-btn').forEach(el=>{
+    el.addEventListener('mouseenter',()=>{ cursorEl.style.width='22px'; cursorEl.style.height='22px'; cursorEl.style.background='var(--blush)'; });
+    el.addEventListener('mouseleave',()=>{ cursorEl.style.width='14px'; cursorEl.style.height='14px'; cursorEl.style.background='var(--forest3)'; });
+  });
+}
+
+function addItem(){
+  const n = document.getElementById('item-name');
+  const c = document.getElementById('item-category');
+  const e = document.getElementById('item-expiry');
+  const name = n.value.trim();
+  if(!name){
+    n.style.borderColor='var(--blush)'; n.style.boxShadow='0 0 0 4px rgba(224,122,95,.2)';
+    n.focus();
+    setTimeout(()=>{ n.style.borderColor=''; n.style.boxShadow=''; },1200);
+    return;
+  }
+  inventory.push({id:nextId++, name, cat:c.value, days:parseInt(e.value)});
+  n.value='';
+  renderInventory();
+}
+
+function deleteItem(id){
+  const el = document.getElementById('item-'+id);
+  if(el){ el.classList.add('removing'); setTimeout(()=>{ inventory=inventory.filter(i=>i.id!==id); renderInventory(); },300); }
+}
+
+// ══ RENDER RECIPES ════════════════════════════════════
+function renderRecipes(filter){
+  currentFilter=filter;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('filter-'+filter).classList.add('active');
+
+  let list=[...RECIPES];
+  if(filter==='quick')     list=list.filter(r=>r.time<20);
+  if(filter==='highmatch') list=list.filter(r=>r.match>=80);
+
+  const grid=document.getElementById('recipe-grid');
+  if(!list.length){ grid.innerHTML='<p style="color:var(--sage);text-align:center;padding:3rem 0;grid-column:1/-1;">No recipes match this filter.</p>'; return; }
+
+  grid.innerHTML=list.map((r,i)=>{
+    const matchColor = r.match>=85?'linear-gradient(135deg,var(--forest),var(--forest3))':r.match>=75?'linear-gradient(135deg,var(--amber),#d97706)':'linear-gradient(135deg,var(--sage),var(--forest2))';
+    const expTags=r.expiring.slice(0,2).map(e=>`<span class="expiring-tag">🔥 ${e}</span>`).join('');
+    return `
+    <div class="recipe-card stagger-item" style="animation-delay:${i*.1}s;" onclick="openCooking(${r.id})">
+      <div style="position:relative;overflow:hidden;">
+        <img class="recipe-img" src="${r.img}" alt="${r.name}" loading="lazy"/>
+        <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(7,31,24,.7) 0%,transparent 55%);"></div>
+        <div class="recipe-play">▶</div>
+        <div class="match-pill" style="background:${matchColor};color:white;">${r.match}% match</div>
+        <div class="time-pill">⏱ ${r.time} min</div>
+      </div>
+      <div style="padding:1.1rem;">
+        <h3 style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--forest);line-height:1.2;margin-bottom:.4rem;">${r.name}</h3>
+        <p style="font-size:.78rem;color:var(--sage);margin-bottom:.75rem;line-height:1.5;font-weight:300;">${r.desc}</p>
+        <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.8rem;">${expTags}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding-top:.6rem;border-top:1px solid rgba(107,158,130,.12);">
+          <span style="font-size:.72rem;color:var(--sage);">${r.steps.length} steps</span>
+          <span style="font-size:.72rem;font-weight:700;color:var(--forest3);background:rgba(45,139,99,.1);padding:.25rem .8rem;border-radius:99px;border:1px solid rgba(45,139,99,.2);">Start Cooking →</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterRecipes(f){ renderRecipes(f); }
+
+// ══ COOKING MODE ══════════════════════════════════════
+function openCooking(id){
+  activeRecipe=RECIPES.find(r=>r.id===id);
+  cookStep=0;
+  showView('cooking');
+  renderCooking();
+}
+
+function renderCooking(){
+  const ph=document.getElementById('cooking-placeholder');
+  const ui=document.getElementById('cooking-ui');
+  if(!activeRecipe){ ph.style.display='flex'; ui.style.display='none'; return; }
+  ph.style.display='none'; ui.style.display='block';
+
+  const r=activeRecipe, s=r.steps[cookStep], total=r.steps.length;
+  const pct=total===1?100:Math.round((cookStep/(total-1))*100);
+  const isFirst=cookStep===0, isLast=cookStep===total-1;
+
+  const dots=r.steps.map((_,i)=>`<div class="step-dot ${i<cookStep?'done':i===cookStep?'current':'future'}" onclick="goToStep(${i})"></div>`).join('');
+
+  ui.innerHTML=`
+  <div class="cook-wrap">
+    <!-- orbs -->
+    <div class="cook-orb" style="width:300px;height:300px;background:rgba(168,237,202,.05);top:-80px;right:-80px;"></div>
+    <div class="cook-orb" style="width:200px;height:200px;background:rgba(245,158,11,.04);bottom:100px;left:-60px;animation-delay:-4s;"></div>
+
+    <!-- back -->
+    <button onclick="showView('recipes')" style="background:none;border:none;color:rgba(255,255,255,.45);font-size:.8rem;margin-bottom:1.5rem;cursor:none;display:flex;align-items:center;gap:.4rem;font-family:'Outfit',sans-serif;transition:color .2s;padding:.3rem 0;" onmouseenter="this.style.color='rgba(255,255,255,.8)'" onmouseleave="this.style.color='rgba(255,255,255,.45)'">← Back to Recipes</button>
+
+    <!-- recipe info -->
+    <div style="margin-bottom:1.5rem;">
+      <p style="color:rgba(255,255,255,.35);font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;margin-bottom:.3rem;">Now Cooking</p>
+      <h2 style="font-family:'Playfair Display',serif;font-size:1.75rem;font-weight:700;color:white;line-height:1.1;">${r.name}</h2>
+    </div>
+
+    <!-- progress -->
+    <div style="margin-bottom:1.5rem;">
+      <div style="display:flex;justify-content:space-between;color:rgba(255,255,255,.4);font-size:.72rem;margin-bottom:.5rem;">
+        <span>Step ${cookStep+1} of ${total}</span>
+        <span>${isLast?'🌟 Last step!':pct+'% done'}</span>
+      </div>
+      <div class="cook-progress-track">
+        <div class="cook-progress-fill" style="width:${Math.max(5,pct)}%;"></div>
+      </div>
+    </div>
+
+    <!-- dots -->
+    <div style="display:flex;gap:.4rem;justify-content:center;margin-bottom:1.5rem;flex-wrap:wrap;">${dots}</div>
+
+    <!-- step card -->
+    <div class="step-card" style="margin-bottom:1.5rem;">
+      <p style="color:rgba(255,255,255,.4);font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.75rem;">${s.t}</p>
+      <p style="color:white;font-size:1.15rem;line-height:1.7;font-weight:300;">${s.b}</p>
+    </div>
+
+    <!-- ingredients (step 0 only) -->
+    ${isFirst?`
+    <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:1rem;margin-bottom:1.5rem;">
+      <p style="color:rgba(255,255,255,.35);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem;">Ingredients You'll Use</p>
+      <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
+        ${r.expiring.map(e=>`<span style="background:rgba(168,237,202,.12);border:1px solid rgba(168,237,202,.2);color:var(--mint);font-size:.72rem;padding:.3rem .8rem;border-radius:99px;">${e}</span>`).join('')}
+      </div>
+    </div>`:''}
+
+    <!-- nav buttons -->
+    <div style="display:flex;gap:.75rem;">
+      <button class="cook-btn cook-btn-prev" onclick="prevStep()" ${isFirst?'disabled':''}>← Previous</button>
+      <button class="cook-btn ${isLast?'cook-btn-done':'cook-btn-next'}" onclick="nextStep()" style="flex:2;">
+        ${isLast?'🎉 Done! Well cooked!':'Next Step →'}
+      </button>
+    </div>
+  </div>`;
+
+  // cursor on new btns
+  ui.querySelectorAll('button').forEach(el=>{
+    el.addEventListener('mouseenter',()=>{ cursorEl.style.width='22px'; cursorEl.style.height='22px'; cursorEl.style.background='var(--blush)'; });
+    el.addEventListener('mouseleave',()=>{ cursorEl.style.width='14px'; cursorEl.style.height='14px'; cursorEl.style.background='var(--forest3)'; });
+  });
+}
+
+function nextStep(){
+  if(!activeRecipe)return;
+  if(cookStep<activeRecipe.steps.length-1){ cookStep++; renderCooking(); }
+  else{ spawnConfetti(); setTimeout(()=>{ activeRecipe=null; showView('recipes'); },1800); }
+}
+function prevStep(){ if(cookStep>0){ cookStep--; renderCooking(); } }
+function goToStep(i){ cookStep=i; renderCooking(); }
+
+// ══ CONFETTI ══════════════════════════════════════════
+function spawnConfetti(){
+  const colors=['#a8edca','#f59e0b','#e07a5f','#2d8b63','#fbbf24','#9dc4ab'];
+  for(let i=0;i<60;i++){
+    const d=document.createElement('div');
+    d.className='confetti-piece';
+    const size=Math.random()*10+5;
+    d.style.cssText=`
+      left:${Math.random()*100}vw; top:${Math.random()*40+30}vh;
+      width:${size}px; height:${size*(Math.random()>.5?1:2.5)}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      animation-delay:${Math.random()*.6}s;
+      animation-duration:${Math.random()*.8+1}s;
+      border-radius:${Math.random()>.5?'50%':'3px'};
+    `;
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(), 2200);
+  }
+}
+
+// ══ VIEW SWITCHING ════════════════════════════════════
+function showView(name){
+  ['inventory','recipes','cooking'].forEach(v=>{
+    const view=document.getElementById('view-'+v);
+    const btn =document.getElementById('nav-'+v);
+    view.classList.remove('active');
+    btn.classList.remove('active');
+  });
+  // force reflow for animation replay
+  const el=document.getElementById('view-'+name);
+  el.style.opacity='0';
+  el.classList.add('active');
+  requestAnimationFrame(()=>{
+    el.style.transition='opacity .35s ease';
+    el.style.opacity='1';
+  });
+  document.getElementById('nav-'+name).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+
+  if(name==='inventory') renderInventory();
+  if(name==='recipes')   renderRecipes(currentFilter);
+}
+
+// ══ INIT ══════════════════════════════════════════════
+renderInventory();
+renderRecipes('all');
+</script>
+</body>
+</html>
