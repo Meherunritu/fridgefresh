@@ -10,11 +10,8 @@ Zero-Waste Recipe Planner
 
 ## ✨ Live Demo
 
-🌐 **[View Live on GitHub Pages](https://your-username.github.io/fridgefresh)**
+🌐 **[View Live on GitHub Pages](https://meherunritu.github.io/fridgefresh/)**
 
-> Replace the link above with your own GitHub Pages URL after deployment.
-
----
 
 ## 📸 Features at a Glance
 
@@ -153,7 +150,7 @@ This project is open source and available under the [MIT License](LICENSE).
 
 Built as a portfolio submission project.
 
-**GitHub:** [@your-username](https://github.com/your-username)
+**GitHub:** [@your-username](https://github.com/Meherunritu)
 
 ---
 
